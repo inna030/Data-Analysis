@@ -51,21 +51,21 @@ GROUP BY
 test_assignment
 
 
---Create a new item view binary metric.
+--Create a new tem view binary metric.
 --Count the number of users per treatment
 --group, and count the number of users with views (for test_id 7)
 SELECT
    test_assignment,
    COUNT (user_id) as users,
-   SUM (order_binary) as users_with_views
+   SUM (view_binary) as users_with_views
 FROM
 (
 SELECT
 assignments.user_id,
 assignments.test_id,
 assignments.test_assignment,
-MAX (CASE when events.event_time > assignments.event_time
-then 1 else 0 END) as order_binary
+MAX (CASE when view.event_time > assignments.event_time
+then 1 else 0 END) as view_binary
 FROM
 (
 SELECT
@@ -91,8 +91,16 @@ ORDER BY
 event_id
 ) assignments
 LEFT OUTER JOIN
+(
+SELECT
+ * 
+from 
 dsv1069.events
-on assignments.user_id = events.user_id
+where 
+event_name='view_item'
+) view
+ON  
+assignments.user_id = view.user_id
 GROUP BY
 assignments.user_id,
 assignments.test_id,
@@ -101,59 +109,6 @@ assignments.test_assignment
 WHERE test_id = 7
 GROUP BY
 test_assignment
-
--- compute the users who viewed an item WITHIN 30
---days of their treatment event
-SELECT
-   test_assignment,
-   COUNT (user_id) as users,
-   SUM (order_binary) as users_with_views_in_30days
-FROM
-(
-SELECT
-assignments.user_id,
-assignments.test_id,
-assignments.test_assignment,
-MAX (CASE when events.event_time > assignments.event_time
-And
-cast((date(events.event_time) - date(assignments.event_time)) as int) <= 30
-then 1 else 0 END) as order_binary
-FROM
-(
-SELECT
-event_id,
-event_time,
-user_id,
--- platform,
-MAX (CASE when parameter_name = 'test_id'
-then cast (parameter_value as int)
-else NULL END) as test_id,
-MAX (CASE when parameter_name = 'test_assignment'
-then cast (parameter_value as int)
-else NULL END) as test_assignment
-FROM
-dsv1069.events
-WHERE
-Event_name = 'test_assignment'
-GROUP BY
-event_id,
-event_time,
-user_id
-ORDER BY
-event_id
-) assignments
-LEFT OUTER JOIN
-dsv1069.events
-on assignments.user_id = events.user_id
-GROUP BY
-assignments.user_id,
-assignments.test_id,
-assignments.test_assignment
-) user_level
-WHERE test_id = 7
-GROUP BY
-test_assignment
-
 --Create the metric invoices (this is a mean
 --metric, not a binary metric) and for test_id = 7
   ----The count of users per treatment group
