@@ -1,2 +1,2 @@
 # Data Analysis
-SQL, Tableau, R, EDA Analysis
+SQL, Tableau, R, Descriptive Analysis
